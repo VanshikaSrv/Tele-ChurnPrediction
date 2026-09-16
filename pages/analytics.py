@@ -656,14 +656,14 @@ class AnalyticsPage(tk.Frame):
 
     def go_to_prediction(self):
 
-    prediction_page = self.controller.frames[
-        "PredictionPage"
-    ]
+        prediction_page = self.controller.frames[
+            "PredictionPage"
+        ]
 
-    prediction_page.load_prediction_form()
+        prediction_page.load_prediction_form()
 
-    self.controller.show_page(
-        "PredictionPage"
-    )
+        self.controller.show_page(
+            "PredictionPage"
+        )
 
 
