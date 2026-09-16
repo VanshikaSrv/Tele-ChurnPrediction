@@ -656,9 +656,14 @@ class AnalyticsPage(tk.Frame):
 
     def go_to_prediction(self):
 
-        messagebox.showinfo(
-            "Prediction",
-            "Prediction page will be connected in Part 5."
-        )
+    prediction_page = self.controller.frames[
+        "PredictionPage"
+    ]
+
+    prediction_page.load_prediction_form()
+
+    self.controller.show_page(
+        "PredictionPage"
+    )
 
 
