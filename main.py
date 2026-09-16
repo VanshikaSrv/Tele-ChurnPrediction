@@ -4,6 +4,7 @@ from tkinter import filedialog, messagebox
 from pages.dataset import DatasetPage
 from pages.training import TrainingPage
 from pages.analytics import AnalyticsPage
+from pages.prediction import PredictionPage
 
 
 class HomePage(tk.Frame):
@@ -51,49 +52,111 @@ class HomePage(tk.Frame):
 
 
 class ChurnApp(tk.Tk):
+
     def __init__(self):
         super().__init__()
+
+        # ==========================================
+        # WINDOW SETTINGS
+        # ==========================================
+
         self.title("Explainable Customer Churn Prediction System")
         self.geometry("1200x750")
         self.minsize(1000, 650)
 
+        # ==========================================
+        # SHARED PROJECT VARIABLES
+        # ==========================================
+
         self.dataset = None
         self.target_column = None
         self.dataset_name = None
+
+        # Machine Learning
         self.best_model = None
         self.best_model_name = None
         self.preprocessor = None
 
+        # Prediction results
+        self.prediction_result = None
+        self.prediction_probability = None
+        self.prediction_risk = None
+        self.prediction_input = None
+
+        # ==========================================
+        # MAIN CONTAINER
+        # ==========================================
+
         container = tk.Frame(self)
         container.pack(fill="both", expand=True)
+
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
+        # ==========================================
+        # CREATE ALL PAGES
+        # ==========================================
+
         self.frames = {}
-        for page_name, page_class in (
+
+        pages = (
             ("HomePage", HomePage),
             ("DatasetPage", DatasetPage),
             ("TrainingPage", TrainingPage),
             ("AnalyticsPage", AnalyticsPage),
-        ):
+            ("PredictionPage", PredictionPage),
+        )
+
+        for page_name, page_class in pages:
+
             page = page_class(container, self)
+
             self.frames[page_name] = page
-            page.grid(row=0, column=0, sticky="nsew")
+
+            page.grid(
+                row=0,
+                column=0,
+                sticky="nsew"
+            )
+
+        # ==========================================
+        # SHOW HOME PAGE
+        # ==========================================
 
         self.show_page("HomePage")
 
+    # ==============================================
+    # PAGE NAVIGATION
+    # ==============================================
+
     def show_page(self, page_name):
+
         if page_name not in self.frames:
-            raise ValueError(f"Unknown page: {page_name}")
+            raise ValueError(
+                f"Unknown page: {page_name}"
+            )
+
         self.frames[page_name].tkraise()
 
+    # ==============================================
+    # USE IBM DATASET
+    # ==============================================
+
     def use_ibm_dataset(self):
+
         dataset_page = self.frames["DatasetPage"]
+
         dataset_page.load_ibm_dataset()
+
         if dataset_page.df is not None:
             self.show_page("DatasetPage")
 
+    # ==============================================
+    # UPLOAD DATASET
+    # ==============================================
+
     def upload_dataset(self):
+
         file_path = filedialog.askopenfilename(
             title="Select Dataset",
             filetypes=(
@@ -102,27 +165,38 @@ class ChurnApp(tk.Tk):
                 ("All Files", "*.*"),
             ),
         )
+
         if not file_path:
             return
 
         dataset_page = self.frames["DatasetPage"]
+
         dataset_page.load_uploaded_dataset(file_path)
+
         if dataset_page.df is not None:
             self.show_page("DatasetPage")
 
+    # ==============================================
+    # ABOUT PROJECT
+    # ==============================================
+
     def show_about(self):
+
         messagebox.showinfo(
             "About Project",
             "Explainable Customer Churn Prediction System\n\n"
-            "This application compares machine-learning models to predict "
-            "telecom customer churn and provides dataset analytics.",
+            "This application compares machine-learning models "
+            "to predict telecom customer churn and provides "
+            "dataset analytics and prediction results."
         )
-
+        
 
 # ==============================================
 # RUN APPLICATION
 # ==============================================
 
 if __name__ == "__main__":
+
     app = ChurnApp()
+
     app.mainloop()

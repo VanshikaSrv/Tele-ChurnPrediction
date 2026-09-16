@@ -665,5 +665,3 @@ class AnalyticsPage(tk.Frame):
         self.controller.show_page(
             "PredictionPage"
         )
-
-

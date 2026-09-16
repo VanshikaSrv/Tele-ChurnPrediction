@@ -4,6 +4,8 @@ from tkinter import ttk, messagebox
 import pandas as pd
 import numpy as np
 
+from .explainability import get_top_reasons, generate_explanation
+
 
 class PredictionPage(tk.Frame):
 
@@ -63,7 +65,10 @@ class PredictionPage(tk.Frame):
             pady=15
         )
 
-        # Predict button
+        # ==========================================
+        # PREDICT BUTTON
+        # ==========================================
+
         tk.Button(
             button_frame,
             text="Predict",
@@ -76,7 +81,26 @@ class PredictionPage(tk.Frame):
             padx=10
         )
 
-        # Reset button
+        # ==========================================
+        # EXPLAIN PREDICTION BUTTON
+        # ==========================================
+
+        tk.Button(
+            button_frame,
+            text="Explain Prediction",
+            width=18,
+            height=2,
+            font=("Arial", 11, "bold"),
+            command=self.explain_prediction
+        ).pack(
+            side="left",
+            padx=10
+        )
+
+        # ==========================================
+        # RESET BUTTON
+        # ==========================================
+
         tk.Button(
             button_frame,
             text="Reset",
@@ -89,7 +113,10 @@ class PredictionPage(tk.Frame):
             padx=10
         )
 
-        # Back button
+        # ==========================================
+        # BACK BUTTON
+        # ==========================================
+
         tk.Button(
             button_frame,
             text="Back",
@@ -135,7 +162,10 @@ class PredictionPage(tk.Frame):
             if column != target
         ]
 
-        # Create scrollable area
+        # ==========================================
+        # CREATE SCROLLABLE AREA
+        # ==========================================
+
         canvas = tk.Canvas(
             self.form_frame,
             bg="white"
@@ -202,9 +232,9 @@ class PredictionPage(tk.Frame):
                 sticky="w"
             )
 
-            # --------------------------------------
+            # ======================================
             # NUMERICAL COLUMN
-            # --------------------------------------
+            # ======================================
 
             if pd.api.types.is_numeric_dtype(
                 self.df[column]
@@ -235,9 +265,9 @@ class PredictionPage(tk.Frame):
 
                 self.entries[column] = entry
 
-            # --------------------------------------
+            # ======================================
             # CATEGORICAL COLUMN
-            # --------------------------------------
+            # ======================================
 
             else:
 
@@ -329,8 +359,9 @@ class PredictionPage(tk.Frame):
             [input_data]
         )
 
-        # Convert columns that were numeric
-        # in the training dataset back to numbers
+        # ==========================================
+        # CONVERT NUMERICAL COLUMNS
+        # ==========================================
 
         for column in self.input_columns:
 
@@ -353,7 +384,10 @@ class PredictionPage(tk.Frame):
                 input_df
             )[0]
 
-            # Probability
+            # ======================================
+            # PROBABILITY
+            # ======================================
+
             if hasattr(
                 model,
                 "predict_proba"
@@ -363,9 +397,32 @@ class PredictionPage(tk.Frame):
                     input_df
                 )[0]
 
-                probability = float(
-                    np.max(probabilities)
-                )
+                # Find probability of class 1
+                if hasattr(model, "classes_"):
+
+                    classes = list(
+                        model.classes_
+                    )
+
+                    if 1 in classes:
+
+                        churn_index = classes.index(1)
+
+                        probability = float(
+                            probabilities[churn_index]
+                        )
+
+                    else:
+
+                        probability = float(
+                            np.max(probabilities)
+                        )
+
+                else:
+
+                    probability = float(
+                        np.max(probabilities)
+                    )
 
             else:
 
@@ -404,8 +461,11 @@ class PredictionPage(tk.Frame):
             # ======================================
 
             self.controller.prediction_result = result
+
             self.controller.prediction_probability = probability
+
             self.controller.prediction_risk = risk
+
             self.controller.prediction_input = input_df
 
             # ======================================
@@ -414,9 +474,15 @@ class PredictionPage(tk.Frame):
 
             messagebox.showinfo(
                 "Prediction Result",
-                "Prediction: " + result
+                "Prediction: "
+                + result
                 + "\n\nProbability: "
-                + str(round(probability * 100, 2))
+                + str(
+                    round(
+                        probability * 100,
+                        2
+                    )
+                )
                 + "%"
                 + "\n\nRisk Level: "
                 + risk
@@ -427,6 +493,308 @@ class PredictionPage(tk.Frame):
             messagebox.showerror(
                 "Prediction Error",
                 "Could not make prediction.\n\n"
+                + str(e)
+            )
+
+    # ==========================================
+    # EXPLAIN PREDICTION
+    # ==========================================
+
+    def explain_prediction(self):
+
+        # ==========================================
+        # CHECK WHETHER PREDICTION WAS MADE
+        # ==========================================
+
+        if self.controller.prediction_input is None:
+
+            messagebox.showwarning(
+                "No Prediction",
+                "Please make a prediction first."
+            )
+
+            return
+
+        try:
+
+            # ======================================
+            # GET CUSTOMER DATA
+            # ======================================
+
+            customer_data = (
+                self.controller
+                .prediction_input
+                .iloc[0]
+                .to_dict()
+            )
+
+            # ======================================
+            # GET TOP FEATURES
+            # ======================================
+
+            top_features = get_top_reasons(
+                customer_data,
+                top_n=5
+            )
+
+            # ======================================
+            # GENERATE EXPLANATION
+            # ======================================
+
+            explanation = generate_explanation(
+                top_features
+            )
+
+            # ======================================
+            # CREATE EXPLANATION WINDOW
+            # ======================================
+
+            explanation_window = tk.Toplevel(self)
+
+            explanation_window.title(
+                "Prediction Explanation"
+            )
+
+            explanation_window.geometry(
+                "750x600"
+            )
+
+            explanation_window.configure(
+                bg="#F4F6F8"
+            )
+
+            # ======================================
+            # TITLE
+            # ======================================
+
+            tk.Label(
+                explanation_window,
+                text="Prediction Explanation",
+                font=("Arial", 22, "bold"),
+                bg="#F4F6F8",
+                fg="#1F2937"
+            ).pack(
+                pady=20
+            )
+
+            # ======================================
+            # RESULT
+            # ======================================
+
+            result = (
+                self.controller
+                .prediction_result
+            )
+
+            probability = (
+                self.controller
+                .prediction_probability
+            )
+
+            risk = (
+                self.controller
+                .prediction_risk
+            )
+
+            result_text = (
+                "Prediction: "
+                + str(result)
+                + "\n"
+                + "Probability: "
+                + str(
+                    round(
+                        probability * 100,
+                        2
+                    )
+                )
+                + "%\n"
+                + "Risk Level: "
+                + str(risk)
+            )
+
+            tk.Label(
+                explanation_window,
+                text=result_text,
+                font=("Arial", 13, "bold"),
+                bg="white",
+                justify="left",
+                padx=20,
+                pady=15
+            ).pack(
+                fill="x",
+                padx=30
+            )
+
+            # ======================================
+            # TOP FEATURES
+            # ======================================
+
+            tk.Label(
+                explanation_window,
+                text="Top Influencing Factors",
+                font=("Arial", 16, "bold"),
+                bg="#F4F6F8",
+                fg="#1F2937"
+            ).pack(
+                pady=(20, 10)
+            )
+
+            # ======================================
+            # TREEVIEW
+            # ======================================
+
+            table_frame = tk.Frame(
+                explanation_window,
+                bg="#F4F6F8"
+            )
+
+            table_frame.pack(
+                fill="both",
+                expand=False,
+                padx=30
+            )
+
+            columns = (
+                "Feature",
+                "Value",
+                "Impact",
+                "Direction"
+            )
+
+            tree = ttk.Treeview(
+                table_frame,
+                columns=columns,
+                show="headings",
+                height=6
+            )
+
+            tree.heading(
+                "Feature",
+                text="Feature"
+            )
+
+            tree.heading(
+                "Value",
+                text="Value"
+            )
+
+            tree.heading(
+                "Impact",
+                text="Impact"
+            )
+
+            tree.heading(
+                "Direction",
+                text="Direction"
+            )
+
+            tree.column(
+                "Feature",
+                width=230
+            )
+
+            tree.column(
+                "Value",
+                width=100
+            )
+
+            tree.column(
+                "Impact",
+                width=100
+            )
+
+            tree.column(
+                "Direction",
+                width=180
+            )
+
+            tree.pack(
+                fill="x"
+            )
+
+            # ======================================
+            # INSERT TOP FEATURES
+            # ======================================
+
+            for _, row in top_features.iterrows():
+
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        str(row["Feature"]),
+                        str(
+                            round(
+                                float(row["Value"]),
+                                3
+                            )
+                        ),
+                        str(
+                            round(
+                                float(row["Impact"]),
+                                3
+                            )
+                        ),
+                        str(row["Direction"])
+                    )
+                )
+
+            # ======================================
+            # HUMAN READABLE EXPLANATION
+            # ======================================
+
+            tk.Label(
+                explanation_window,
+                text="Explanation",
+                font=("Arial", 16, "bold"),
+                bg="#F4F6F8",
+                fg="#1F2937"
+            ).pack(
+                pady=(20, 8)
+            )
+
+            explanation_text = tk.Text(
+                explanation_window,
+                height=8,
+                width=75,
+                font=("Arial", 11),
+                wrap="word"
+            )
+
+            explanation_text.pack(
+                padx=30,
+                pady=(0, 20)
+            )
+
+            explanation_text.insert(
+                "1.0",
+                explanation
+            )
+
+            explanation_text.config(
+                state="disabled"
+            )
+
+            # ======================================
+            # CLOSE BUTTON
+            # ======================================
+
+            tk.Button(
+                explanation_window,
+                text="Close",
+                width=15,
+                height=2,
+                font=("Arial", 11, "bold"),
+                command=explanation_window.destroy
+            ).pack(
+                pady=10
+            )
+
+        except Exception as e:
+
+            messagebox.showerror(
+                "Explanation Error",
+                "Could not generate explanation.\n\n"
                 + str(e)
             )
 
@@ -444,6 +812,7 @@ class PredictionPage(tk.Frame):
             ):
 
                 if len(widget["values"]) > 0:
+
                     widget.current(0)
 
             else:
@@ -454,11 +823,24 @@ class PredictionPage(tk.Frame):
                 )
 
                 # Put median again
-                median_value = self.df[column].median()
+                median_value = (
+                    self.df[column].median()
+                )
 
                 if pd.notna(median_value):
 
                     widget.insert(
                         0,
-                        str(round(median_value, 2))
+                        str(
+                            round(
+                                median_value,
+                                2
+                            )
+                        )
                     )
+
+        # Clear previous prediction
+        self.controller.prediction_result = None
+        self.controller.prediction_probability = None
+        self.controller.prediction_risk = None
+        self.controller.prediction_input = None
