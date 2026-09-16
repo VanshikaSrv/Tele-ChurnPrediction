@@ -387,5 +387,7 @@ class DatasetPage(tk.Frame):
             "Ready to continue to model training."
         )
 
-        # Training page will be connected in Part 3.
+        self.controller.show_page(
+            "TrainingPage"
+        )
 

@@ -682,18 +682,23 @@ class TrainingPage(tk.Frame):
     # ==================================================
 
     def continue_to_analytics(self):
-
         if self.best_model is None:
 
             messagebox.showwarning(
-                "Train Models",
-                "Please train the models before continuing."
+                "No Model",
+                "Please train the models first."
             )
 
             return
 
-        messagebox.showinfo(
-            "Next Step",
-            "Model training completed.\n\n"
-            "Analytics Dashboard will be connected in Part 4."
+        analytics_page = self.controller.frames[
+            "AnalyticsPage"
+        ]
+
+        analytics_page.load_analytics()
+
+        self.controller.show_page(
+            "AnalyticsPage"
         )
+
+    
